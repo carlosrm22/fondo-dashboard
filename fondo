@@ -4,8 +4,9 @@ set -euo pipefail
 session="fondo"
 motion="${FONDO_MOTION:-1}"
 interval="${FONDO_LAYOUT_INTERVAL:-8}"
+main_width="${FONDO_MAIN_PANE_WIDTH:-58}"
 missing=()
-for cmd in tmux btop procs duf fastfetch cmatrix watch; do
+for cmd in tmux procs cmatrix watch; do
   command -v "$cmd" >/dev/null 2>&1 || missing+=("$cmd")
 done
 
@@ -28,16 +29,16 @@ if [ -t 1 ] && command -v figlet >/dev/null 2>&1; then
   sleep 0.7
 fi
 
-win_id="$(tmux new-session -d -P -F "#{window_id}" -s "$session" "TERM=tmux-256color COLORTERM=truecolor btop")"
+win_id="$(tmux new-session -d -P -F "#{window_id}" -s "$session" "TERM=tmux-256color COLORTERM=truecolor /home/carlos/.local/bin/fondo-pane-rotator cpu")"
 
 tmux set-option -t "$session" -gq default-terminal "tmux-256color"
 tmux set-option -t "$session" -gq status on
 tmux set-option -t "$session" -gq status-interval 1
 tmux set-option -t "$session" -gq status-style "bg=colour17,fg=colour45"
-tmux set-option -t "$session" -gq status-left-length 48
-tmux set-option -t "$session" -gq status-right-length 130
+tmux set-option -t "$session" -gq status-left-length 52
+tmux set-option -t "$session" -gq status-right-length 160
 tmux set-option -t "$session" -gq status-left "#[fg=colour51,bold] HOLLYWOOD #[fg=colour39]| #[fg=colour45]#S "
-tmux set-option -t "$session" -gq status-right "#[fg=colour45]%Y-%m-%d #[fg=colour51]%H:%M:%S #[fg=colour39]| m:${motion} i:${interval}s #[fg=colour39]| C-b q exit / l layout / r rotate"
+tmux set-option -t "$session" -gq status-right "#[fg=colour45]%Y-%m-%d #[fg=colour51]%H:%M:%S #[fg=colour39]| m:${motion} i:${interval}s w:${main_width}% #[fg=colour39]| C-b q exit / l layout / r reset / R shuffle"
 tmux set-option -t "$session" -gq pane-border-status top
 tmux set-option -t "$session" -gq pane-border-format " #[fg=colour39]#{pane_index} #[fg=colour51,bold]#{pane_title} "
 tmux set-option -t "$session" -gq pane-border-style "fg=colour24"
@@ -49,30 +50,33 @@ tmux set-option -at "$session" -gq terminal-overrides ",xterm-256color:RGB,scree
 
 p1="$(tmux list-panes -t "$win_id" -F "#{pane_id}" | head -n1)"
 p2="$(tmux split-window -h -P -F "#{pane_id}" -t "$p1" "TERM=tmux-256color COLORTERM=truecolor procs --watch --color always --theme dark")"
-p3="$(tmux split-window -v -P -F "#{pane_id}" -t "$p1" "TERM=tmux-256color COLORTERM=truecolor watch -n 2 -c 'duf --theme ansi'")"
-p4="$(tmux split-window -v -P -F "#{pane_id}" -t "$p2" "TERM=tmux-256color COLORTERM=truecolor watch -n 10 -c 'fastfetch --pipe false --bright-color true'")"
+p3="$(tmux split-window -v -P -F "#{pane_id}" -t "$p1" "TERM=tmux-256color COLORTERM=truecolor /home/carlos/.local/bin/fondo-pane-rotator disk")"
+p4="$(tmux split-window -v -P -F "#{pane_id}" -t "$p2" "TERM=tmux-256color COLORTERM=truecolor /home/carlos/.local/bin/fondo-pane-rotator profile")"
 p5="$(tmux split-window -v -P -F "#{pane_id}" -t "$p3" "TERM=tmux-256color COLORTERM=truecolor cmatrix -ab -u 10")"
 p6="$(tmux split-window -v -P -F "#{pane_id}" -t "$p4" "TERM=tmux-256color COLORTERM=truecolor FONDO_WIDGET_DURATION=16 /home/carlos/.local/bin/fondo-widget-runner")"
 
 : "$p5" "$p6"
 
-tmux select-pane -t "$p1" -T "BTop CPU/RAM"
+tmux select-pane -t "$p1" -T "CPU/RAM Rotating Mix"
 tmux select-pane -t "$p2" -T "Processes"
-tmux select-pane -t "$p3" -T "Disk Usage"
-tmux select-pane -t "$p4" -T "System Profile"
+tmux select-pane -t "$p3" -T "Disk/FS Rotating Mix"
+tmux select-pane -t "$p4" -T "System Profile Rotating Mix"
 tmux select-pane -t "$p5" -T "Matrix"
 tmux select-pane -t "$p6" -T "Original Hollywood Widgets"
 
-tmux select-layout -t "$win_id" tiled
+# Start on a readable, non-flat layout.
+tmux set-window-option -t "$win_id" main-pane-width "$main_width"
+tmux select-layout -t "$win_id" main-vertical
 tmux select-pane -t "$p1"
 
 # Session-local shortcuts.
 tmux bind-key -T prefix q kill-session -t "$session"
-tmux bind-key -T prefix l next-layout -t "$win_id"
-tmux bind-key -T prefix r rotate-window -t "$win_id" -D
+tmux bind-key -T prefix l run-shell "tmux select-layout -t '$win_id' tiled; sleep 0.2; tmux set-window-option -t '$win_id' main-pane-width '$main_width'; tmux select-layout -t '$win_id' main-vertical"
+tmux bind-key -T prefix r run-shell "tmux set-window-option -t '$win_id' main-pane-width '$main_width'; tmux select-layout -t '$win_id' main-vertical"
+tmux bind-key -T prefix R rotate-window -t "$win_id" -D
 
 if [[ "$motion" == "1" ]] && command -v /home/carlos/.local/bin/fondo-animate >/dev/null 2>&1; then
-  tmux run-shell -b "/home/carlos/.local/bin/fondo-animate '$session' '$win_id' '$interval'"
+  tmux run-shell -b "/home/carlos/.local/bin/fondo-animate '$session' '$win_id' '$interval' '$main_width'"
 fi
 
 exec tmux attach -t "$session"

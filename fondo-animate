@@ -4,20 +4,31 @@ set -euo pipefail
 session="${1:-fondo}"
 window_id="${2:-}"
 interval="${3:-8}"
+main_width="${4:-58}"
+shuffle="${FONDO_PANE_SHUFFLE:-0}"
 
 if [[ -z "$window_id" ]]; then
   exit 0
 fi
 
-layouts=(tiled even-horizontal main-horizontal even-vertical main-vertical)
+# Curated layouts: varied, but no "all horizontal" modes.
+layouts=(main-vertical tiled even-vertical main-vertical tiled)
 idx=0
 
 sleep 4
 
 while tmux has-session -t "$session" 2>/dev/null; do
   layout="${layouts[$idx]}"
+  if [[ "$layout" == "main-vertical" ]]; then
+    tmux set-window-option -t "$window_id" main-pane-width "$main_width" >/dev/null 2>&1 || true
+  fi
   tmux select-layout -t "$window_id" "$layout" >/dev/null 2>&1 || true
-  tmux rotate-window -t "$window_id" -D >/dev/null 2>&1 || true
+
+  # Optional extra movement; off by default to preserve readability.
+  if [[ "$shuffle" == "1" ]]; then
+    tmux rotate-window -t "$window_id" -D >/dev/null 2>&1 || true
+  fi
+
   idx=$(( (idx + 1) % ${#layouts[@]} ))
   sleep "$interval"
 done
