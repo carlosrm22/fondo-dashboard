@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 if [[ "${1:-}" == "--check" ]]; then
-  command -v locate >/dev/null 2>&1 && command -v jp2a >/dev/null 2>&1
+  if command -v jp2a >/dev/null 2>&1; then
+    exit 0
+  fi
+  command -v chafa >/dev/null 2>&1
   exit $?
 fi
 while true; do
@@ -9,7 +12,11 @@ while true; do
   for f in "${files[@]}"; do
     [[ -r "$f" && -s "$f" && -f "$f" ]] || continue
     clear
-    jp2a --colors --term-fit "$f"
+    if command -v jp2a >/dev/null 2>&1; then
+      jp2a --colors --term-fit "$f"
+    else
+      chafa --colors full --animate off --size "$(tput cols)x$(tput lines)" "$f" 2>/dev/null || true
+    fi
     sleep 0.57
   done
 done
