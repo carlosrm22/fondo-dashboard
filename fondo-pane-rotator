@@ -89,20 +89,31 @@ while true; do
       has_widget man && cmds+=("$widget_dir/man")
       has_widget code && cmds+=("$widget_dir/code")
       has_widget jp2a && cmds+=("$widget_dir/jp2a")
-      has_widget map && cmds+=("$widget_dir/map")
-      has_widget mplayer && cmds+=("$widget_dir/mplayer")
+      # Show map occasionally; too frequent map overlays reduce readability.
+      if has_widget map && (( RANDOM % 100 < 35 )); then
+        cmds+=("$widget_dir/map")
+      fi
+      # Reduce flicker by showing mplayer only occasionally.
+      if has_widget mplayer && (( RANDOM % 100 < 18 )); then
+        cmds+=("$widget_dir/mplayer")
+      fi
       ;;
     fx)
       # Prioritize Barracuda and map feed, keep cmatrix as occasional effect.
       if command -v upsilon-readings >/dev/null 2>&1; then
         cmds+=("upsilon-readings" "upsilon-readings" "upsilon-readings" "upsilon-readings" "upsilon-readings")
       fi
-      has_widget map && cmds+=("$widget_dir/map" "$widget_dir/map")
+      if has_widget map && (( RANDOM % 100 < 22 )); then
+        cmds+=("$widget_dir/map")
+      fi
       command -v cmatrix >/dev/null 2>&1 && cmds+=("cmatrix -ab -u 10")
       has_widget apg && cmds+=("$widget_dir/apg")
       has_widget sshart && cmds+=("$widget_dir/sshart")
       has_widget jp2a && cmds+=("$widget_dir/jp2a")
-      has_widget mplayer && cmds+=("$widget_dir/mplayer")
+      # Reduce flicker by showing mplayer only occasionally.
+      if has_widget mplayer && (( RANDOM % 100 < 10 )); then
+        cmds+=("$widget_dir/mplayer")
+      fi
       ;;
   esac
 

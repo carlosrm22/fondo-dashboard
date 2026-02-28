@@ -41,10 +41,20 @@ has_widget_name() {
 iter=0
 while true; do
   iter=$((iter + 1))
-  if has_widget_name "map" && (( iter % 5 == 0 )); then
+  if has_widget_name "map" && (( iter % 12 == 0 )); then
     pick="map"
   else
     pick="${widgets[RANDOM % ${#widgets[@]}]}"
+    # Reduce flicker from ASCII video by deprioritizing mplayer.
+    if [[ "$pick" == "mplayer" ]] && (( RANDOM % 100 < 85 )); then
+      for _ in 1 2 3 4 5; do
+        alt="${widgets[RANDOM % ${#widgets[@]}]}"
+        if [[ "$alt" != "mplayer" ]]; then
+          pick="$alt"
+          break
+        fi
+      done
+    fi
   fi
   printf '\033[1;96m[%s]\033[0m widget: \033[1;92m%s\033[0m\n\n' "$(date +%H:%M:%S)" "$pick"
   if command -v timeout >/dev/null 2>&1; then
