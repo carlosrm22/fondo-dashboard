@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+session="${1:-fondo}"
+window_id="${2:-}"
+interval="${3:-8}"
+
+if [[ -z "$window_id" ]]; then
+  exit 0
+fi
+
+layouts=(tiled even-horizontal main-horizontal even-vertical main-vertical)
+idx=0
+
+sleep 4
+
+while tmux has-session -t "$session" 2>/dev/null; do
+  layout="${layouts[$idx]}"
+  tmux select-layout -t "$window_id" "$layout" >/dev/null 2>&1 || true
+  tmux rotate-window -t "$window_id" -D >/dev/null 2>&1 || true
+  idx=$(( (idx + 1) % ${#layouts[@]} ))
+  sleep "$interval"
+done

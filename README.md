@@ -1,87 +1,51 @@
-# Hollywood on Fedora via Distrobox
+# Fondo Dashboard (replaces old hollywood distrobox wrapper)
 
-Helpers for running the original `hollywood` package on Fedora using a Ubuntu Distrobox container.
+This repository now ships a native `tmux` dashboard called `fondo`.
 
-## What this includes
+## Why this replacement
 
-- `hollywood.sh`: Bash functions and aliases for:
-  - `hollywood`: run Hollywood in `hollywood-box`
-  - `hollywood-classic` / `hclassic`: classic locale + default tuning (`-s 12 -d 10`)
-  - `hollywood-bg` / `hbg`: launch in fullscreen terminal
-  - `hollywood-bg-classic` / `hbgc`: fullscreen + classic mode
-  - `hollywood-stop`: stop active Hollywood sessions
-- `install.sh`: idempotent installer for `~/.bashrc.d/hollywood.sh`
+- No `distrobox` required
+- Faster startup
+- Works directly in Fedora terminal environments
+- Includes motion effects (layout rotation + pane shuffling)
+- Includes a `Hollywood Feed` pane inspired by original Ubuntu Hollywood widgets
 
-## Requirements
+## Included files
 
-- Fedora host with:
-  - `podman`
-  - `distrobox`
-- A container named `hollywood-box` (Ubuntu 22.04 recommended)
+- `fondo`: main launcher (6 panes, neon theme, motion)
+- `fondo-hud`: clock + uptime + network HUD widget
+- `fondo-cinema`: rotating feed (`hexdump`, `man`, `tree`, `stat`)
+- `fondo-animate`: background layout/pane animator
+- `hollywood.sh`: compatibility shell functions/aliases (`hollywood` -> `fondo`)
+- `install.sh`: installs commands to `~/.local/bin`
 
-## Setup
-
-1. Install host dependencies:
-
-```bash
-sudo dnf install -y podman distrobox
-```
-
-2. Create container (once):
-
-```bash
-distrobox create -n hollywood-box -i ubuntu:22.04
-```
-
-3. Install Hollywood inside container (non-interactive):
-
-```bash
-distrobox enter hollywood-box -- bash -lc \
-  "sudo env DEBIAN_FRONTEND=noninteractive DEBCONF_NONINTERACTIVE_SEEN=true apt-get update && \
-   sudo env DEBIAN_FRONTEND=noninteractive DEBCONF_NONINTERACTIVE_SEEN=true apt-get install -y hollywood"
-```
-
-4. Install shell helpers from this repo:
+## Install
 
 ```bash
 ./install.sh
-source ~/.bashrc
+hash -r
+fondo
 ```
 
-## Usage
-
-- Normal:
+## Runtime options
 
 ```bash
-hollywood
+FONDO_LAYOUT_INTERVAL=5 fondo   # faster motion
+FONDO_MOTION=0 fondo            # static layout
 ```
 
-- Classic look:
+## Useful keys inside tmux
 
-```bash
-hollywood-classic
-```
+- `Ctrl+b q`: kill `fondo` session
+- `Ctrl+b l`: next layout
+- `Ctrl+b r`: rotate panes
 
-- Fullscreen (graphical session):
+## About original Ubuntu Hollywood
 
-```bash
-hollywood-bg
-```
+The original package by Dustin Kirkland is available at:
 
-- Fullscreen classic:
+- https://github.com/dustinkirkland/hollywood
+- https://launchpad.net/ubuntu/+source/hollywood
 
-```bash
-hollywood-bg-classic
-```
-
-- Stop stuck sessions:
-
-```bash
-hollywood-stop
-```
-
-## Notes
-
-- This uses the original Ubuntu package (`hollywood` by Dustin Kirkland), not a clone.
-- In text TTYs (`Ctrl+Alt+F3`, etc.) visuals differ from graphical terminals.
-- If launched from an inaccessible directory, `distrobox enter` can fail; run from your home directory.
+Its widget scripts are in `/usr/lib/hollywood` and include:
+`apg`, `atop`, `bmon`, `cmatrix`, `hexdump`, `htop`, `jp2a`, `man|ccze`, `speedometer`, `ssh-keygen`, `stat`, `tree`, `mplayer -vo caca`.

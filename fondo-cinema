@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+colorize() {
+  if command -v ccze >/dev/null 2>&1; then
+    ccze -A
+  else
+    cat
+  fi
+}
+
+while true; do
+  mode=$((RANDOM % 4))
+  case "$mode" in
+    0)
+      bin="$(ls /usr/bin 2>/dev/null | shuf -n1 || true)"
+      if [[ -n "$bin" && -r "/usr/bin/$bin" ]]; then
+        head -c 4096 "/usr/bin/$bin" | hexdump -C | colorize
+      fi
+      ;;
+    1)
+      man_cmd="$(compgen -c | shuf -n1 || true)"
+      if [[ -n "$man_cmd" ]]; then
+        MANPAGER=cat man "$man_cmd" 2>/dev/null | sed -n '1,120p' | colorize
+      fi
+      ;;
+    2)
+      dir="$(printf '%s\n' /etc /usr /var /tmp /home 2>/dev/null | shuf -n1 || true)"
+      if [[ -n "$dir" && -d "$dir" ]]; then
+        tree -L 2 "$dir" 2>/dev/null | colorize
+      fi
+      ;;
+    3)
+      path="$(find /sys /dev -maxdepth 2 2>/dev/null | shuf -n1 || true)"
+      if [[ -n "$path" ]]; then
+        stat "$path" 2>/dev/null | colorize
+      fi
+      ;;
+  esac
+  sleep 0.6
+  clear
+done

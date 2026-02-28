@@ -2,11 +2,18 @@
 set -euo pipefail
 
 src_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-target_dir="$HOME/.bashrc.d"
-target_file="$target_dir/hollywood.sh"
 
-mkdir -p "$target_dir"
-cp "$src_dir/hollywood.sh" "$target_file"
+mkdir -p "$HOME/.local/bin" "$HOME/.bashrc.d"
+install -m 0755 "$src_dir/fondo" "$HOME/.local/bin/fondo"
+install -m 0755 "$src_dir/fondo-hud" "$HOME/.local/bin/fondo-hud"
+install -m 0755 "$src_dir/fondo-animate" "$HOME/.local/bin/fondo-animate"
+install -m 0755 "$src_dir/fondo-cinema" "$HOME/.local/bin/fondo-cinema"
+
+# Optional compatibility launcher so old workflows keep working.
+ln -sfn "$HOME/.local/bin/fondo" "$HOME/.local/bin/hollywood"
+
+compat_file="$HOME/.bashrc.d/hollywood.sh"
+install -m 0644 "$src_dir/hollywood.sh" "$compat_file"
 
 if ! grep -q '^[[:space:]]*if \[ -d ~/.bashrc.d \]; then' "$HOME/.bashrc" 2>/dev/null; then
   cat >> "$HOME/.bashrc" <<'BASHRC_SNIPPET'
@@ -20,5 +27,7 @@ fi
 BASHRC_SNIPPET
 fi
 
-echo "Installed: $target_file"
-echo "Run: source ~/.bashrc"
+echo "Installed commands: $HOME/.local/bin/fondo, fondo-hud, fondo-animate, fondo-cinema"
+echo "Compatibility: $HOME/.local/bin/hollywood -> fondo"
+echo "Bash helpers: $compat_file"
+echo "Run: hash -r && source ~/.bashrc"

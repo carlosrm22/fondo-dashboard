@@ -1,80 +1,57 @@
-# Shell helpers for running Hollywood from Fedora through Distrobox.
-# Source this file from ~/.bashrc.
+# Shell helpers: redirect old hollywood commands to fondo.
+# Source this file from ~/.bashrc.d or ~/.zshrc.local.
 
-_hollywood_build_cmd() {
-  local mode="${1:-default}"
-  shift || true
-
-  local -a cmd
-  if command -v distrobox >/dev/null 2>&1; then
-    cmd=(distrobox enter hollywood-box -- hollywood)
-  elif command -v distrobox-host-exec >/dev/null 2>&1; then
-    cmd=(distrobox-host-exec distrobox enter hollywood-box -- hollywood)
-  else
-    echo "No se encontro distrobox ni distrobox-host-exec en este shell." >&2
-    return 127
-  fi
-
-  if [[ "$mode" == "classic" ]]; then
-    cmd=(env LC_ALL=C LANG=C "${cmd[@]}" -s 12 -d 10)
-  fi
-
-  HOLLYWOOD_CMD=("${cmd[@]}" "$@")
+fondo() {
+  command "$HOME/.local/bin/fondo" "$@"
 }
 
-hollywood() {
-  _hollywood_build_cmd default "$@" || return $?
-  "${HOLLYWOOD_CMD[@]}"
+fondo_stop() {
+  tmux kill-session -t fondo >/dev/null 2>&1 || true
 }
 
-hollywood_classic() {
-  _hollywood_build_cmd classic "$@" || return $?
-  "${HOLLYWOOD_CMD[@]}"
-}
-
-_hollywood_launch_fullscreen() {
-  local mode="${1:-default}"
-  shift || true
-
-  _hollywood_build_cmd "$mode" "$@" || return $?
-
+fondo_bg() {
   if [[ -z "${DISPLAY:-}" && -z "${WAYLAND_DISPLAY:-}" ]]; then
-    "${HOLLYWOOD_CMD[@]}"
+    fondo "$@"
     return
   fi
 
-  local cmd_str
-  printf -v cmd_str '%q ' "${HOLLYWOOD_CMD[@]}"
-
   if command -v konsole >/dev/null 2>&1; then
-    nohup konsole --fullscreen -e bash -lc "$cmd_str" >/dev/null 2>&1 &
+    nohup konsole --fullscreen -e bash -lc 'fondo' >/dev/null 2>&1 &
   elif command -v gnome-terminal >/dev/null 2>&1; then
-    nohup gnome-terminal --full-screen -- bash -lc "$cmd_str" >/dev/null 2>&1 &
+    nohup gnome-terminal --full-screen -- bash -lc 'fondo' >/dev/null 2>&1 &
   elif command -v xfce4-terminal >/dev/null 2>&1; then
-    nohup xfce4-terminal --fullscreen -x bash -lc "$cmd_str" >/dev/null 2>&1 &
+    nohup xfce4-terminal --fullscreen -x bash -lc 'fondo' >/dev/null 2>&1 &
   elif command -v xterm >/dev/null 2>&1; then
-    nohup xterm -maximized -e bash -lc "$cmd_str" >/dev/null 2>&1 &
+    nohup xterm -maximized -e bash -lc 'fondo' >/dev/null 2>&1 &
   else
     echo "No se encontro un emulador de terminal para modo pantalla completa." >&2
     return 127
   fi
 }
 
+# Backward compatibility with previous repo commands.
+hollywood() {
+  fondo "$@"
+}
+
+hollywood_classic() {
+  FONDO_MOTION=0 FONDO_LAYOUT_INTERVAL=10 fondo "$@"
+}
+
 hollywood_bg() {
-  _hollywood_launch_fullscreen default "$@"
+  fondo_bg "$@"
 }
 
 hollywood_bg_classic() {
-  _hollywood_launch_fullscreen classic "$@"
+  FONDO_MOTION=0 FONDO_LAYOUT_INTERVAL=10 fondo_bg "$@"
 }
 
 hollywood_stop() {
-  pkill -f 'distrobox enter hollywood-box -- hollywood' >/dev/null 2>&1 || true
-  pkill -f 'distrobox-host-exec distrobox enter hollywood-box -- hollywood' >/dev/null 2>&1 || true
-  pkill -f 'attach-session -t hollywood' >/dev/null 2>&1 || true
-  pkill -f 'new-session -d -s hollywood' >/dev/null 2>&1 || true
+  fondo_stop
 }
 
+alias fondo-stop='fondo_stop'
+alias fondo-bg='fondo_bg'
 alias hollywood-bg='hollywood_bg'
 alias hbg='hollywood_bg'
 alias hollywood-classic='hollywood_classic'

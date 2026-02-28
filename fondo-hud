@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+printf "\033[1;96m%s\033[0m  " "$(date +%H:%M:%S)"
+uptime -p
+printf "\n"
+awk 'NR>2 {gsub(/:/, "", $1); printf "%-10s RX:%10.1f MB  TX:%10.1f MB\n", $1, $2/1024/1024, $10/1024/1024}' /proc/net/dev
